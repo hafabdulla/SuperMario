@@ -7,7 +7,7 @@ ground			BYTE "-----------------------------------------------------------------
 strScore		BYTE "Your score is: ",0
 strLives		BYTE " Lives: ",0
 score			DWORD 0
-lives			BYTE 3
+lives			BYTE 5
 
 xPos			BYTE 40  ; Player fixed at center of screen
 yPos			BYTE 28  ; Start at ground level
@@ -26,7 +26,7 @@ worldOffset		WORD 0   ; How far the world has scrolled
 
 ; Platform data (x, y, width)
 ; Format: xPos, yPos, width
-platformCount	BYTE 20
+platformCount	BYTE 30
 platforms		BYTE 10, 26, 8    ; Platform 1
 				BYTE 22, 24, 6    ; Platform 2
 				BYTE 35, 26, 10   ; Platform 3
@@ -44,9 +44,19 @@ platforms		BYTE 10, 26, 8    ; Platform 1
 				BYTE 215, 26, 10  ; Platform 15
 				BYTE 230, 23, 12  ; Platform 16
 				BYTE 245, 25, 8   ; Platform 17
-				BYTE 5, 24, 10    ; Platform 18
-				BYTE 18, 26, 9    ; Platform 19
-				BYTE 28, 23, 12   ; Platform 20
+				BYTE 15, 20, 8    ; Platform 18 (higher)
+				BYTE 30, 22, 10   ; Platform 19
+				BYTE 45, 19, 7    ; Platform 20 (higher)
+				BYTE 60, 21, 9    ; Platform 21
+				BYTE 75, 18, 12   ; Platform 22 (higher)
+				BYTE 90, 20, 8    ; Platform 23
+				BYTE 105, 22, 10  ; Platform 24
+				BYTE 120, 19, 9   ; Platform 25 (higher)
+				BYTE 135, 21, 11  ; Platform 26
+				BYTE 150, 18, 8   ; Platform 27 (higher)
+				BYTE 165, 20, 10  ; Platform 28
+				BYTE 180, 22, 12  ; Platform 29
+				BYTE 195, 19, 9   ; Platform 30 (higher)
 
 ; Coin data (x, y, collected)
 coinCount		BYTE 30
@@ -81,20 +91,28 @@ coins			BYTE 15, 25, 0    ; Coin 1
 				BYTE 48, 27, 0    ; Coin 29
 				BYTE 92, 27, 0    ; Coin 30
 
-; Goomba data (x, y, direction, alive)
-; direction: 0 = left, 1 = right
-; alive: 0 = dead, 1 = alive
+; Goomba struct definition
+Goomba STRUCT
+	xPos			BYTE ?		; Current X position
+	yPos			BYTE ?		; Current Y position
+	direction		BYTE ?		; 0 = left, 1 = right
+	alive			BYTE ?		; 0 = dead, 1 = alive
+	startX			BYTE ?		; Starting X position (for patrol)
+	patrolDistance	BYTE ?		; How far to patrol from start
+Goomba ENDS
+
+; Goomba data - using struct
 goombaCount     BYTE 10
-goombas         BYTE 30, 28, 0, 1    ; Goomba 1
-                BYTE 75, 28, 1, 1    ; Goomba 2
-                BYTE 120, 28, 0, 1   ; Goomba 3
-                BYTE 165, 28, 1, 1   ; Goomba 4
-                BYTE 210, 28, 0, 1   ; Goomba 5
-                BYTE 250, 28, 1, 1   ; Goomba 6
-                BYTE 58, 25, 1, 1    ; Goomba 7 (on platform)
-                BYTE 130, 25, 0, 1   ; Goomba 8 (on platform)
-                BYTE 195, 25, 1, 1   ; Goomba 9 (on platform)
-                BYTE 240, 24, 0, 1   ; Goomba 10 (on platform)
+goombas         Goomba <30, 28, 0, 1, 30, 40>    ; Goomba 1: patrol 40 units
+                Goomba <75, 28, 1, 1, 75, 50>    ; Goomba 2: patrol 50 units
+                Goomba <120, 28, 0, 1, 120, 30>  ; Goomba 3: patrol 30 units
+                Goomba <165, 28, 1, 1, 165, 45>  ; Goomba 4: patrol 45 units
+                Goomba <210, 28, 0, 1, 210, 35>  ; Goomba 5: patrol 35 units
+                Goomba <250, 28, 1, 1, 250, 25>  ; Goomba 6: patrol 25 units
+                Goomba <58, 25, 1, 1, 58, 20>    ; Goomba 7: patrol 20 units (on platform)
+                Goomba <130, 25, 0, 1, 130, 30>  ; Goomba 8: patrol 30 units (on platform)
+                Goomba <195, 25, 1, 1, 195, 40>  ; Goomba 9: patrol 40 units (on platform)
+                Goomba <240, 24, 0, 1, 240, 15>  ; Goomba 10: patrol 15 units (on platform)
 
 goombaSpeed     BYTE 1
 goombaTimer     BYTE 0
@@ -153,7 +171,7 @@ main PROC
 	; Initialize game
 	mov worldOffset, 0
 	mov score, 0
-	mov lives, 3
+	mov lives, 5
 	mov isJumping, 0
 	mov isGrounded, 1
 	mov jumpCount, 0
@@ -648,43 +666,63 @@ UpdateGoombas PROC
 	push ecx
 	
 	; Check if alive
-	movzx eax, BYTE PTR [ebx+3]
+	movzx eax, (Goomba PTR [ebx]).alive
 	cmp al, 0
 	je skipThisGoomba
 	
-	; Get goomba data
-	movzx edx, BYTE PTR [ebx]      ; x position
-	movzx eax, BYTE PTR [ebx+1]    ; y position
-	movzx ecx, BYTE PTR [ebx+2]    ; direction
+	; Get goomba data using struct members
+	movzx edx, (Goomba PTR [ebx]).xPos           ; current x position
+	movzx esi, (Goomba PTR [ebx]).startX         ; start x position
+	movzx edi, (Goomba PTR [ebx]).patrolDistance ; patrol distance
+	movzx ecx, (Goomba PTR [ebx]).direction      ; direction
 	
 	; Move goomba based on direction
 	cmp cl, 0
 	je moveGoombaLeft
 	
 	moveGoombaRight:
-	inc dl
-	; Check if hit wall or edge
-	cmp dl, 170
+	; Calculate right boundary: startX + patrolDistance
+	mov eax, esi
+	add eax, edi
+	; Make sure it doesn't exceed 250
+	cmp eax, 250
+	jle rightBoundOk
+	mov eax, 250
+	rightBoundOk:
+	; Check if reached right boundary
+	cmp dl, al
 	jge reverseGoombaDirection
-	jmp updateGoombaPos
+	; Move right
+	inc dl
+	mov (Goomba PTR [ebx]).xPos, dl
+	jmp skipThisGoomba
 	
 	moveGoombaLeft:
-	cmp dl, 5
+	; Calculate left boundary: max(5, startX - patrolDistance)
+	mov eax, esi
+	sub eax, edi
+	; Make sure it's at least 5 (handle underflow)
+	cmp eax, 5
+	jge leftBoundOk
+	mov eax, 5
+	leftBoundOk:
+	; Check if reached left boundary
+	cmp dl, al
 	jle reverseGoombaDirection
+	; Move left
 	dec dl
-	jmp updateGoombaPos
+	mov (Goomba PTR [ebx]).xPos, dl
+	jmp skipThisGoomba
 	
 	reverseGoombaDirection:
 	; Reverse direction
 	xor ecx, 1
-	mov BYTE PTR [ebx+2], cl
+	mov (Goomba PTR [ebx]).direction, cl
+	; Don't move this frame, just reverse
 	jmp skipThisGoomba
 	
-	updateGoombaPos:
-	mov BYTE PTR [ebx], dl
-	
 	skipThisGoomba:
-	add ebx, 4
+	add ebx, SIZEOF Goomba
 	pop ecx
 	loop updateGoombaLoop
 	
@@ -712,14 +750,14 @@ DrawGoombas PROC
 	drawGoombaLoop:
 	push ecx
 	
-	; Check if alive
-	movzx eax, BYTE PTR [ebx+3]
+	; Check if alive using struct
+	movzx eax, (Goomba PTR [ebx]).alive
 	cmp al, 0
 	je skipDrawGoomba
 	
-	; Get goomba position
-	movzx edx, BYTE PTR [ebx]      ; goomba x
-	movzx ecx, BYTE PTR [ebx+1]    ; goomba y
+	; Get goomba position using struct
+	movzx edx, (Goomba PTR [ebx]).xPos
+	movzx ecx, (Goomba PTR [ebx]).yPos
 	
 	; Adjust for world offset
 	sub dx, worldOffset
@@ -737,7 +775,7 @@ DrawGoombas PROC
 	call WriteChar
 	
 	skipDrawGoomba:
-	add ebx, 4
+	add ebx, SIZEOF Goomba
 	pop ecx
 	loop drawGoombaLoop
 	
@@ -761,14 +799,14 @@ CheckGoombaCollision PROC
 	checkCollisionLoop:
 	push ecx
 	
-	; Check if alive
-	movzx eax, BYTE PTR [ebx+3]
+	; Check if alive using struct
+	movzx eax, (Goomba PTR [ebx]).alive
 	cmp al, 0
 	je skipCollisionCheck
 	
-	; Get goomba position
-	movzx edx, BYTE PTR [ebx]      ; goomba x
-	movzx ecx, BYTE PTR [ebx+1]    ; goomba y
+	; Get goomba position using struct
+	movzx edx, (Goomba PTR [ebx]).xPos
+	movzx ecx, (Goomba PTR [ebx]).yPos
 	
 	; Adjust for world offset
 	mov esi, edx
@@ -792,7 +830,7 @@ CheckGoombaCollision PROC
 	je playerHit
 	
 	skipCollisionCheck:
-	add ebx, 4
+	add ebx, SIZEOF Goomba
 	pop ecx
 	loop checkCollisionLoop
 	
@@ -800,8 +838,8 @@ CheckGoombaCollision PROC
 	jmp doneCollisionCheck
 	
 	defeatedGoomba:
-	; Kill goomba
-	mov BYTE PTR [ebx+3], 0
+	; Kill goomba using struct
+	mov (Goomba PTR [ebx]).alive, 0
 	add score, 100
 	
 	; Make Mario bounce
@@ -836,16 +874,24 @@ ResetGoombas PROC
 	push eax
 	push ebx
 	push ecx
+	push edx
 	
 	mov ecx, 0
 	movzx ecx, goombaCount
 	lea ebx, goombas
 	
 	resetGoombaLoop:
-	mov BYTE PTR [ebx+3], 1  ; Set alive
-	add ebx, 4
+	; Reset alive status
+	mov (Goomba PTR [ebx]).alive, 1
+	
+	; Reset position to starting position
+	movzx eax, (Goomba PTR [ebx]).startX
+	mov (Goomba PTR [ebx]).xPos, al
+	
+	add ebx, SIZEOF Goomba
 	loop resetGoombaLoop
 	
+	pop edx
 	pop ecx
 	pop ebx
 	pop eax
@@ -903,7 +949,7 @@ DrawPlayer PROC
 	push eax
 	push edx
 	
-	mov eax, red + (black * 16)
+	mov eax, lightBlue + (black * 16)
 	call SetTextColor
 	
 	mov dl, xPos
@@ -912,6 +958,7 @@ DrawPlayer PROC
 	mov al, "M"
 	call WriteChar
 	
+	mov eax, white + (black * 16)
 	pop edx
 	pop eax
 	ret
