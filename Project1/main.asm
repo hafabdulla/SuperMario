@@ -26,28 +26,79 @@ worldOffset		WORD 0   ; How far the world has scrolled
 
 ; Platform data (x, y, width)
 ; Format: xPos, yPos, width
-platformCount	BYTE 8
-platforms		BYTE 10, 25, 15   ; Platform 1
-				BYTE 35, 22, 12   ; Platform 2
-				BYTE 55, 20, 10   ; Platform 3
-				BYTE 75, 18, 15   ; Platform 4
-				BYTE 95, 23, 12   ; Platform 5
-				BYTE 115, 21, 10  ; Platform 6
-				BYTE 135, 19, 15  ; Platform 7
-				BYTE 155, 24, 12  ; Platform 8
+platformCount	BYTE 20
+platforms		BYTE 10, 26, 8    ; Platform 1
+				BYTE 22, 24, 6    ; Platform 2
+				BYTE 35, 26, 10   ; Platform 3
+				BYTE 50, 23, 8    ; Platform 4
+				BYTE 65, 25, 12   ; Platform 5
+				BYTE 82, 24, 7    ; Platform 6
+				BYTE 95, 26, 10   ; Platform 7
+				BYTE 110, 23, 8   ; Platform 8
+				BYTE 125, 25, 12  ; Platform 9
+				BYTE 142, 24, 8   ; Platform 10
+				BYTE 155, 26, 10  ; Platform 11
+				BYTE 170, 23, 9   ; Platform 12
+				BYTE 185, 25, 11  ; Platform 13
+				BYTE 200, 24, 8   ; Platform 14
+				BYTE 215, 26, 10  ; Platform 15
+				BYTE 230, 23, 12  ; Platform 16
+				BYTE 245, 25, 8   ; Platform 17
+				BYTE 5, 24, 10    ; Platform 18
+				BYTE 18, 26, 9    ; Platform 19
+				BYTE 28, 23, 12   ; Platform 20
 
 ; Coin data (x, y, collected)
-coinCount		BYTE 10
-coins			BYTE 15, 24, 0    ; Coin 1
-				BYTE 40, 21, 0    ; Coin 2
-				BYTE 60, 19, 0    ; Coin 3
-				BYTE 80, 17, 0    ; Coin 4
-				BYTE 100, 22, 0   ; Coin 5
-				BYTE 120, 20, 0   ; Coin 6
-				BYTE 140, 18, 0   ; Coin 7
-				BYTE 160, 23, 0   ; Coin 8
-				BYTE 50, 27, 0    ; Coin 9
-				BYTE 90, 27, 0    ; Coin 10
+coinCount		BYTE 30
+coins			BYTE 15, 25, 0    ; Coin 1
+				BYTE 25, 23, 0    ; Coin 2
+				BYTE 40, 25, 0    ; Coin 3
+				BYTE 55, 22, 0    ; Coin 4
+				BYTE 70, 24, 0    ; Coin 5
+				BYTE 85, 23, 0    ; Coin 6
+				BYTE 100, 25, 0   ; Coin 7
+				BYTE 115, 22, 0   ; Coin 8
+				BYTE 130, 24, 0   ; Coin 9
+				BYTE 145, 23, 0   ; Coin 10
+				BYTE 160, 25, 0   ; Coin 11
+				BYTE 175, 22, 0   ; Coin 12
+				BYTE 190, 24, 0   ; Coin 13
+				BYTE 205, 23, 0   ; Coin 14
+				BYTE 220, 25, 0   ; Coin 15
+				BYTE 235, 22, 0   ; Coin 16
+				BYTE 250, 24, 0   ; Coin 17
+				BYTE 8, 23, 0     ; Coin 18
+				BYTE 20, 25, 0    ; Coin 19
+				BYTE 33, 22, 0    ; Coin 20
+				BYTE 12, 27, 0    ; Coin 21 (ground level)
+				BYTE 45, 27, 0    ; Coin 22
+				BYTE 78, 27, 0    ; Coin 23
+				BYTE 105, 27, 0   ; Coin 24
+				BYTE 138, 27, 0   ; Coin 25
+				BYTE 172, 27, 0   ; Coin 26
+				BYTE 208, 27, 0   ; Coin 27
+				BYTE 242, 27, 0   ; Coin 28
+				BYTE 48, 27, 0    ; Coin 29
+				BYTE 92, 27, 0    ; Coin 30
+
+; Goomba data (x, y, direction, alive)
+; direction: 0 = left, 1 = right
+; alive: 0 = dead, 1 = alive
+goombaCount     BYTE 10
+goombas         BYTE 30, 28, 0, 1    ; Goomba 1
+                BYTE 75, 28, 1, 1    ; Goomba 2
+                BYTE 120, 28, 0, 1   ; Goomba 3
+                BYTE 165, 28, 1, 1   ; Goomba 4
+                BYTE 210, 28, 0, 1   ; Goomba 5
+                BYTE 250, 28, 1, 1   ; Goomba 6
+                BYTE 58, 25, 1, 1    ; Goomba 7 (on platform)
+                BYTE 130, 25, 0, 1   ; Goomba 8 (on platform)
+                BYTE 195, 25, 1, 1   ; Goomba 9 (on platform)
+                BYTE 240, 24, 0, 1   ; Goomba 10 (on platform)
+
+goombaSpeed     BYTE 1
+goombaTimer     BYTE 0
+goombaDelay     BYTE 5   ; Move every 5 frames
 
 ; Starting screen strings
 title1			BYTE "  _____ _    _ _____  ______ _____  ",0
@@ -80,8 +131,10 @@ inst2			BYTE "Controls:",0
 inst3			BYTE "  SPACE - Jump",0
 inst4			BYTE "  A - Move Left",0
 inst5			BYTE "  D - Move Right",0
-inst6			BYTE "  X - Exit Game",0
-inst7			BYTE "Press any key to return to menu...",0
+inst6			BYTE "  P - Pause Game",0
+inst7			BYTE "  X - Exit Game",0
+inst8			BYTE "Jump on Goombas (G) to defeat them!",0
+inst9			BYTE "Press any key to return to menu...",0
 
 ; Pause Menu strings
 pauseTitle		BYTE "=== GAME PAUSED ===",0
@@ -105,9 +158,11 @@ main PROC
 	mov isGrounded, 1
 	mov jumpCount, 0
 	mov isPaused, 0
+	mov goombaTimer, 0
 	
-	; Reset all coins
+	; Reset all coins and goombas
 	call ResetCoins
+	call ResetGoombas
 
 	gameLoop:
 		; Check if paused
@@ -131,6 +186,10 @@ main PROC
 		; Draw coins
 		call DrawCoins
 		
+		; Update and draw goombas
+		call UpdateGoombas
+		call DrawGoombas
+		
 		; Draw player
 		call DrawPlayer
 		
@@ -139,6 +198,9 @@ main PROC
 		
 		; Handle gravity and jumping
 		call HandlePhysics
+		
+		; Check goomba collision
+		call CheckGoombaCollision
 		
 		; Get input (non-blocking check)
 		mov eax, 50
@@ -161,10 +223,10 @@ main PROC
 		cmp inputChar, 32
 		je startJump
 		
-		cmp inputChar, "a"
+		cmp inputChar, "j"
 		je moveLeft
 		
-		cmp inputChar, "d"
+		cmp inputChar, "l"
 		je moveRight
 		
 		noInput:
@@ -198,7 +260,10 @@ main PROC
 		mov isGrounded, 1
 		mov jumpCount, 0
 		mov isPaused, 0
+		mov goombaTimer, 0
+		mov yPos, 28
 		call ResetCoins
+		call ResetGoombas
 		jmp gameLoop
 		
 		exitToMenu:
@@ -211,7 +276,10 @@ main PROC
 		mov isGrounded, 1
 		mov jumpCount, 0
 		mov isPaused, 0
+		mov goombaTimer, 0
+		mov yPos, 28
 		call ResetCoins
+		call ResetGoombas
 		jmp gameLoop
 		
 		startJump:
@@ -555,6 +623,235 @@ DrawCoins PROC
 	ret
 DrawCoins ENDP
 
+UpdateGoombas PROC
+	push eax
+	push ebx
+	push ecx
+	push edx
+	
+	; Check timer for movement delay
+	mov al, goombaTimer
+	inc al
+	mov goombaTimer, al
+	movzx ecx, al
+	movzx eax, goombaDelay
+	cmp ecx, eax
+	jl skipGoombaUpdate
+	mov goombaTimer, 0
+	
+	; Update each goomba
+	mov ecx, 0
+	movzx ecx, goombaCount
+	lea ebx, goombas
+	
+	updateGoombaLoop:
+	push ecx
+	
+	; Check if alive
+	movzx eax, BYTE PTR [ebx+3]
+	cmp al, 0
+	je skipThisGoomba
+	
+	; Get goomba data
+	movzx edx, BYTE PTR [ebx]      ; x position
+	movzx eax, BYTE PTR [ebx+1]    ; y position
+	movzx ecx, BYTE PTR [ebx+2]    ; direction
+	
+	; Move goomba based on direction
+	cmp cl, 0
+	je moveGoombaLeft
+	
+	moveGoombaRight:
+	inc dl
+	; Check if hit wall or edge
+	cmp dl, 170
+	jge reverseGoombaDirection
+	jmp updateGoombaPos
+	
+	moveGoombaLeft:
+	cmp dl, 5
+	jle reverseGoombaDirection
+	dec dl
+	jmp updateGoombaPos
+	
+	reverseGoombaDirection:
+	; Reverse direction
+	xor ecx, 1
+	mov BYTE PTR [ebx+2], cl
+	jmp skipThisGoomba
+	
+	updateGoombaPos:
+	mov BYTE PTR [ebx], dl
+	
+	skipThisGoomba:
+	add ebx, 4
+	pop ecx
+	loop updateGoombaLoop
+	
+	skipGoombaUpdate:
+	pop edx
+	pop ecx
+	pop ebx
+	pop eax
+	ret
+UpdateGoombas ENDP
+
+DrawGoombas PROC
+	push eax
+	push ebx
+	push ecx
+	push edx
+	
+	mov eax, brown + (black * 16)
+	call SetTextColor
+	
+	mov ecx, 0
+	movzx ecx, goombaCount
+	lea ebx, goombas
+	
+	drawGoombaLoop:
+	push ecx
+	
+	; Check if alive
+	movzx eax, BYTE PTR [ebx+3]
+	cmp al, 0
+	je skipDrawGoomba
+	
+	; Get goomba position
+	movzx edx, BYTE PTR [ebx]      ; goomba x
+	movzx ecx, BYTE PTR [ebx+1]    ; goomba y
+	
+	; Adjust for world offset
+	sub dx, worldOffset
+	
+	; Check if goomba is on screen
+	cmp dx, 0
+	jl skipDrawGoomba
+	cmp dx, 120
+	jge skipDrawGoomba
+	
+	; Draw goomba
+	mov dh, cl
+	call Gotoxy
+	mov al, "G"
+	call WriteChar
+	
+	skipDrawGoomba:
+	add ebx, 4
+	pop ecx
+	loop drawGoombaLoop
+	
+	pop edx
+	pop ecx
+	pop ebx
+	pop eax
+	ret
+DrawGoombas ENDP
+
+CheckGoombaCollision PROC
+	push ebx
+	push ecx
+	push edx
+	
+	; Check collision with each goomba
+	mov ecx, 0
+	movzx ecx, goombaCount
+	lea ebx, goombas
+	
+	checkCollisionLoop:
+	push ecx
+	
+	; Check if alive
+	movzx eax, BYTE PTR [ebx+3]
+	cmp al, 0
+	je skipCollisionCheck
+	
+	; Get goomba position
+	movzx edx, BYTE PTR [ebx]      ; goomba x
+	movzx ecx, BYTE PTR [ebx+1]    ; goomba y
+	
+	; Adjust for world offset
+	mov esi, edx
+	sub si, worldOffset
+	
+	; Check if player is at same position
+	movzx edx, xPos
+	cmp edx, esi
+	jne skipCollisionCheck
+	
+	movzx eax, yPos
+	
+	; Check if jumping on top (player above goomba)
+	mov edi, ecx
+	dec edi
+	cmp eax, edi
+	je defeatedGoomba
+	
+	; Check if hit from side (player at same height)
+	cmp eax, ecx
+	je playerHit
+	
+	skipCollisionCheck:
+	add ebx, 4
+	pop ecx
+	loop checkCollisionLoop
+	
+	; No collision
+	jmp doneCollisionCheck
+	
+	defeatedGoomba:
+	; Kill goomba
+	mov BYTE PTR [ebx+3], 0
+	add score, 100
+	
+	; Make Mario bounce
+	mov isJumping, 1
+	mov jumpCounter, 0
+	mov al, jumpHeight
+	shr al, 1  ; Half jump height for bounce
+	
+	pop ecx
+	jmp doneCollisionCheck
+	
+	playerHit:
+	; Player loses a life
+	mov al, lives
+	dec al
+	mov lives, al
+	
+	; Reset position
+	mov yPos, 28
+	mov worldOffset, 0
+	
+	pop ecx
+	
+	doneCollisionCheck:
+	pop edx
+	pop ecx
+	pop ebx
+	ret
+CheckGoombaCollision ENDP
+
+ResetGoombas PROC
+	push eax
+	push ebx
+	push ecx
+	
+	mov ecx, 0
+	movzx ecx, goombaCount
+	lea ebx, goombas
+	
+	resetGoombaLoop:
+	mov BYTE PTR [ebx+3], 1  ; Set alive
+	add ebx, 4
+	loop resetGoombaLoop
+	
+	pop ecx
+	pop ebx
+	pop eax
+	ret
+ResetGoombas ENDP
+
 DrawHUD PROC
 	push eax
 	push edx
@@ -882,14 +1179,27 @@ ShowInstructions PROC
 	mov edx, OFFSET inst6
 	call WriteString
 	
-	; Set yellow color for prompt
+	mov dl, 15
+	mov dh, 15
+	call Gotoxy
+	mov edx, OFFSET inst7
+	call WriteString
+	
+	; Set yellow color for tip
 	mov eax, yellow + (black * 16)
 	call SetTextColor
 	
-	mov dl, 20
+	mov dl, 15
 	mov dh, 17
 	call Gotoxy
-	mov edx, OFFSET inst7
+	mov edx, OFFSET inst8
+	call WriteString
+	
+	; Set yellow color for prompt
+	mov dl, 20
+	mov dh, 20
+	call Gotoxy
+	mov edx, OFFSET inst9
 	call WriteString
 	
 	; Reset to white color
