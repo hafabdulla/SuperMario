@@ -1,0 +1,23 @@
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.cache
+*.pdb
+
+# Build outputs
+Debug/
+Release/
+bin/
+obj/
+ipch/
+*.ilk
+*.idb
+*.tlog
+*.log
+*.exe
+*.obj
+
+# MASM
+*.lst
+*.map
